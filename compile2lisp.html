@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compile to Lisp</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 1200px;
+            width: 100%;
+            padding: 30px;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .description {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .editor-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .editor-section {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .editor-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .editor-label {
+            font-weight: 600;
+            color: #333;
+            font-size: 16px;
+        }
+        
+        textarea {
+            width: 100%;
+            height: 400px;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        #output {
+            background-color: #f8f9fa;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-compile {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-compile:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn-copy {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-copy:hover {
+            background: #218838;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn-clear {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-clear:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn-example {
+            background: #17a2b8;
+            color: white;
+        }
+        
+        .btn-example:hover {
+            background: #138496;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            background: #28a745;
+            color: white;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: all 0.3s;
+            pointer-events: none;
+            z-index: 1000;
+        }
+        
+        .notification.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        @media (max-width: 768px) {
+            .editor-container {
+                grid-template-columns: 1fr;
+            }
+            
+            textarea {
+                height: 250px;
+            }
+            
+            .container {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 Compile to Lisp</h1>
+        <p class="description">
+            Transforms brackets: replaces '[' with '(' and appends ')' for each '[' at the end of each line
+        </p>
+        
+        <div class="editor-container">
+            <div class="editor-section">
+                <div class="editor-header">
+                    <span class="editor-label">📝 Input</span>
+                </div>
+                <textarea id="input" placeholder="Paste your code here..."></textarea>
+            </div>
+            
+            <div class="editor-section">
+                <div class="editor-header">
+                    <span class="editor-label">✨ Output</span>
+                </div>
+                <textarea id="output" readonly placeholder="Compiled output will appear here..."></textarea>
+            </div>
+        </div>
+        
+        <div class="button-group">
+            <button class="btn-compile" onclick="compileCode()">🚀 Compile</button>
+            <button class="btn-copy" onclick="copyOutput()">📋 Copy Output</button>
+            <button class="btn-example" onclick="loadExample()">💡 Load Example</button>
+            <button class="btn-clear" onclick="clearAll()">🗑️ Clear All</button>
+        </div>
+    </div>
+    
+    <div class="notification" id="notification">Copied to clipboard!</div>
+    
+    <script>
+        // Transform a string: replace '[' with '(' and append one ')' per '[' at end of each line.
+        
+        function splitLines(s) {
+            const lines = [];
+            let currentLine = "";
+            
+            for (let i = 0; i < s.length; i++) {
+                const ch = s[i];
+                if (ch === '\n') {
+                    lines.push(currentLine);
+                    currentLine = "";
+                } else {
+                    currentLine += ch;
+                }
+            }
+            
+            // Don't forget the last line if it doesn't end with newline
+            lines.push(currentLine);
+            
+            return lines;
+        }
+        
+        function countChar(s, target) {
+            let count = 0;
+            for (let i = 0; i < s.length; i++) {
+                if (s[i] === target) {
+                    count++;
+                }
+            }
+            return count;
+        }
+        
+        function replaceBrackets(s) {
+            let result = "";
+            for (let i = 0; i < s.length; i++) {
+                const ch = s[i];
+                result += (ch === '[') ? '(' : ch;
+            }
+            return result;
+        }
+        
+        function processLine(line) {
+            const n = countChar(line, '[');
+            const replaced = replaceBrackets(line);
+            return replaced + ')'.repeat(n);
+        }
+        
+        function joinLines(lines) {
+            return lines.join('\n');
+        }
+        
+        function compile(s) {
+            const lines = splitLines(s);
+            const processedLines = lines.map(processLine);
+            return joinLines(processedLines);
+        }
+        
+        // UI Functions
+        function compileCode() {
+            const input = document.getElementById('input').value;
+            const output = compile(input);
+            document.getElementById('output').value = output;
+        }
+        
+        function copyOutput() {
+            const output = document.getElementById('output');
+            output.select();
+            document.execCommand('copy');
+            showNotification('Copied to clipboard!');
+        }
+        
+        function clearAll() {
+            document.getElementById('input').value = '';
+            document.getElementById('output').value = '';
+        }
+        
+        function loadExample() {
+            const example = `hello [world
+[foo [bar
+[test [nested [deep`;
+            document.getElementById('input').value = example;
+            compileCode();
+        }
+        
+        function showNotification(message) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 2000);
+        }
+        
+        // Auto-compile on input change
+        document.getElementById('input').addEventListener('input', compileCode);
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Ctrl/Cmd + Enter to compile
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                compileCode();
+            }
+            // Ctrl/Cmd + Shift + C to copy
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'C') {
+                e.preventDefault();
+                copyOutput();
+            }
+        });
+    </script>
+</body>
+</html>
